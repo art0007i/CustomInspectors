@@ -3,7 +3,8 @@
 ## This mod requires [SpecialItemsLib](https://github.com/art0007i/SpecialItemsLib) to work
 
 A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) that allows you to use custom inspector panels by saving them and clicking the purple heart.<br>
-Make sure to wait for it to finish syncing before favoriting or it won't work!
+Make sure to wait for it to finish syncing before favoriting or it won't work!<br>
+The `SceneInspector` component MUST be on the top level slot of the inspector, but most should be doing that anyway.
 
 ## Installation
 1. Install [NeosModLoader](https://github.com/zkxs/NeosModLoader).
