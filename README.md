@@ -1,6 +1,6 @@
 # CustomInspectors
 
-A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) that allows you to favorite inspector panels by saving them and clicking the purple heart.<br>
+A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) that allows you to use custom inspector panels by saving them and clicking the purple heart.<br>
 Make sure to wait for it to finish syncing before favoriting or it won't work!
 
 ## Installation
