@@ -16,7 +16,7 @@ namespace CustomInspectors
     {
         public override string Name => "CustomInspectors";
         public override string Author => "art0007i";
-        public override string Version => "1.0.0";
+        public override string Version => "1.1.0";
         public override string Link => "https://github.com/art0007i/CustomInspectors/";
         public override void OnEngineInit()
         {
@@ -33,8 +33,7 @@ namespace CustomInspectors
         {
             static void Postfix(Slot slot, HashSet<string> tags)
             {
-                var correct = slot.Name == "Holder" ? slot[0] : slot;
-                if (correct.GetComponent<SceneInspector>() != null)
+                if (slot.GetComponent<SceneInspector>() != null)
                 {
                     tags.Add(INSPECTOR_TAG);
                 }
