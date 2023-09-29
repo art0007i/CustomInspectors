@@ -1,29 +1,28 @@
 using HarmonyLib;
-using NeosModLoader;
+using ResoniteModLoader;
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using FrooxEngine;
-using SpecialItemsLib;
 using System.IO;
-using BaseX;
+using Elements.Core;
+using SpecialItemsLib;
 
 namespace CustomInspectors
 {
-    public class CustomInspectors : NeosMod
+    public class CustomInspectors : ResoniteMod
     {
         public override string Name => "CustomInspectors";
         public override string Author => "art0007i";
-        public override string Version => "1.1.0";
+        public override string Version => "2.0.0";
         public override string Link => "https://github.com/art0007i/CustomInspectors/";
         public override void OnEngineInit()
         {
             Harmony harmony = new Harmony("me.art0007i.CustomInspectors");
-            OurItem = SpecialItemsLib.SpecialItemsLib.RegisterItem(INSPECTOR_TAG);
+            OurItem = SpecialItemsLib.SpecialItemsLib.RegisterItem(INSPECTOR_TAG, "Inspector");
             harmony.PatchAll();
-
         }
         private static string INSPECTOR_TAG { get { return "custom_inspector_panel"; } }
         private static CustomSpecialItem OurItem;
@@ -47,84 +46,88 @@ namespace CustomInspectors
                 if (OurItem.Uri == null) return true;
                 var translator = new ReferenceTranslator();
                 var uri = OurItem.Uri;
-                if ( uri.Scheme == "neosrec")
+                if ( uri.Scheme == Engine.Current.Cloud.Platform.RecordScheme)
                 {
-                    var ctask = Engine.Current.Cloud.GetRecordCached<Record>(uri, null);
+                    var ctask = Engine.Current.Cloud.Records.GetRecordCached<Record>(uri, null);
                     ctask.Wait();
-                    CloudX.Shared.CloudResult<Record> cloudResult = ctask.Result;
+                    SkyFrost.Base.CloudResult<Record> cloudResult = ctask.Result;
                     if (cloudResult.IsError)
                     {
                         return true;
                     }
                     uri = new Uri(cloudResult.Entity.AssetURI);
                 }
-                var ttask = Engine.Current.AssetManager.RequestGather(uri, FrooxEngine.Priority.Normal, null);
+
+                var ttask = Engine.Current.AssetManager.GatherAssetFile(uri, 20, null);
                 ttask.AsTask().Wait();
                 string text = ttask.Result;
-                if (text != null && File.Exists(text))
+                if (text == null || !File.Exists(text))
                 {
-                    // this is where we load the json and parse it to merge guids with refids
-                    DataTreeDictionary node = DataTreeConverter.Load(text, uri);
-                    var rootNode = node.TryGetDictionary("Object");
-                    if (rootNode.TryGetDictionary("Name").TryGetNode("Data").LoadString() == "Holder")
+                    return false;
+                }
+
+                // this is where we load the json and parse it to merge guids with refids
+                DataTreeDictionary node = DataTreeConverter.Load(text, uri);
+                var rootNode = node.TryGetDictionary("Object");
+                if (rootNode.TryGetDictionary("Name").TryGetNode("Data").LoadString() == "Holder")
+                {
+                    rootNode = rootNode.TryGetList("Children").Children[0] as DataTreeDictionary;
+                    node.Children["Object"] = rootNode;
+                }
+                var topLevel = rootNode.TryGetDictionary("Components").TryGetList("Data");
+                foreach (var dataNode in topLevel.Children)
+                {
+                    var dictNode = (dataNode as DataTreeDictionary);
+                    var str = dictNode.TryGetNode("Type").LoadString();
+                    if (str == typeof(SceneInspector).ToString())
                     {
-                        rootNode = rootNode.TryGetList("Children").Children[0] as DataTreeDictionary;
-                        node.Children["Object"] = rootNode;
-                    }
-                    var topLevel = rootNode.TryGetDictionary("Components").TryGetList("Data");
-                    foreach (var dataNode in topLevel.Children)
-                    {
-                        var dictNode = (dataNode as DataTreeDictionary);
-                        var str = dictNode.TryGetNode("Type").LoadString();
-                        if (str == typeof(SceneInspector).ToString())
+                        var dataDict = dictNode.TryGetDictionary("Data");
+
+                        // Component guid merge
+                        translator.Associate(__instance.ReferenceID, new Guid(dataDict.TryGetNode("ID").LoadString()));
+                        dataDict.Children["ID"] = new DataTreeValue(Guid.NewGuid().ToString());
+
+                        __instance.ForeachSyncMember<IWorldElement>((member) =>
                         {
-                            var dataDict = dictNode.TryGetDictionary("Data");
-
-                            // Component guid merge
-                            translator.Associate(__instance.ReferenceID, new Guid(dataDict.TryGetNode("ID").LoadString()));
-                            dataDict.Children["ID"] = new DataTreeValue(Guid.NewGuid().ToString());
-
-                            __instance.ForeachSyncMember<IWorldElement>((member) =>
-                            {
-                                var guidStr = dataDict.TryGetDictionary(member.Name)?.TryGetNode("ID").LoadString();
-                                if (guidStr != null)
-                                {   
-                                    // Sync member guids merge
-                                    translator.Associate(member.ReferenceID, new Guid(guidStr));
-                                    dataDict.TryGetDictionary(member.Name).Children["ID"] = new DataTreeValue(Guid.NewGuid().ToString());
-                                }
-                            });
-                            break;
-                        }
+                            var guidStr = dataDict.TryGetDictionary(member.Name)?.TryGetNode("ID").LoadString();
+                            if (guidStr != null)
+                            {   
+                                // Sync member guids merge
+                                translator.Associate(member.ReferenceID, new Guid(guidStr));
+                                dataDict.TryGetDictionary(member.Name).Children["ID"] = new DataTreeValue(Guid.NewGuid().ToString());
+                            }
+                        });
+                        break;
                     }
-                    // now time to actually load the object
-                    if (!__instance.Slot.IsDestroyed)
-                    {
-                        var pos = __instance.Slot.GlobalPosition;
-                        var rot = __instance.Slot.GlobalRotation;
-                        var scl = __instance.Slot.GlobalScale;
+                }
 
-                        __instance.Slot.LoadObject(node, refTranslator: translator);
-                        var old = __instance.Slot.GetComponent<SceneInspector>((insp) => insp != __instance);
+                // now time to actually load the object
+                if (!__instance.Slot.IsDestroyed)
+                {
+                    var pos = __instance.Slot.GlobalPosition;
+                    var rot = __instance.Slot.GlobalRotation;
+                    var scl = __instance.Slot.GlobalScale;
 
-                        var rt = AccessTools.Field(typeof(SceneInspector), "_rootText");
-                        var ct = AccessTools.Field(typeof(SceneInspector), "_componentText");
-                        var hcr = AccessTools.Field(typeof(SceneInspector), "_hierarchyContentRoot");
-                        var ccr = AccessTools.Field(typeof(SceneInspector), "_componentsContentRoot");
+                    __instance.Slot.LoadObject(node, refTranslator: translator);
+                    var old = __instance.Slot.GetComponent<SceneInspector>((insp) => insp != __instance);
 
-                        (rt.GetValue(__instance) as SyncRef<Sync<string>>).Target = (rt.GetValue(old) as SyncRef<Sync<string>>).Target;
-                        (ct.GetValue(__instance) as SyncRef<Sync<string>>).Target = (ct.GetValue(old) as SyncRef<Sync<string>>).Target;
-                        (hcr.GetValue(__instance) as SyncRef<Slot>).Target = (hcr.GetValue(old) as SyncRef<Slot>).Target;
-                        (ccr.GetValue(__instance) as SyncRef<Slot>).Target = (ccr.GetValue(old) as SyncRef<Slot>).Target;
+                    var rt = AccessTools.Field(typeof(SceneInspector), "_rootText");
+                    var ct = AccessTools.Field(typeof(SceneInspector), "_componentText");
+                    var hcr = AccessTools.Field(typeof(SceneInspector), "_hierarchyContentRoot");
+                    var ccr = AccessTools.Field(typeof(SceneInspector), "_componentsContentRoot");
 
-                        old.Destroy(false);
+                    (rt.GetValue(__instance) as SyncRef<Sync<string>>).Target = (rt.GetValue(old) as SyncRef<Sync<string>>).Target;
+                    (ct.GetValue(__instance) as SyncRef<Sync<string>>).Target = (ct.GetValue(old) as SyncRef<Sync<string>>).Target;
+                    (hcr.GetValue(__instance) as SyncRef<Slot>).Target = (hcr.GetValue(old) as SyncRef<Slot>).Target;
+                    (ccr.GetValue(__instance) as SyncRef<Slot>).Target = (ccr.GetValue(old) as SyncRef<Slot>).Target;
 
-                        __instance.Enabled = true;
-                        __instance.Slot.GlobalPosition = pos;
-                        __instance.Slot.GlobalRotation = rot;
-                        __instance.Slot.GlobalScale = scl;
+                    old.Destroy(false);
 
-                    }
+                    __instance.Enabled = true;
+                    __instance.Slot.GlobalPosition = pos;
+                    __instance.Slot.GlobalRotation = rot;
+                    __instance.Slot.GlobalScale = scl;
+
                 }
                 return false;
             }
