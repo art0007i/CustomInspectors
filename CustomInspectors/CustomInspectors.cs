@@ -18,15 +18,28 @@ namespace CustomInspectors
         public override string Author => "art0007i";
         public override string Version => "2.0.0";
         public override string Link => "https://github.com/art0007i/CustomInspectors/";
+
         public override void OnEngineInit()
         {
             Harmony harmony = new Harmony("me.art0007i.CustomInspectors");
+
+            // Register the special item.
+            // The readable name will be shown to users in the inventory in this format: "Set {0}"
+            // In this case it will be "Set Inspector"
             OurItem = SpecialItemsLib.SpecialItemsLib.RegisterItem(INSPECTOR_TAG, "Inspector");
             harmony.PatchAll();
         }
-        private static string INSPECTOR_TAG { get { return "custom_inspector_panel"; } }
+
+        // This is the tag that the custom item will have.
+        // It is recommended to have at least 1 _ character in the tag,
+        // so that it's impossible to craft an item that will show up as favoritable without the required component
+        private const string INSPECTOR_TAG = "custom_inspector_panel";
+
+        // This is the interface that the SpecialItemLib gives us. We can use it to read the favorite url.
         private static CustomSpecialItem OurItem;
 
+        // This is the function that determines whether an item should be favoritable.
+        // Note: This is called recursively for every slot of an object whenever it is saved.
         [HarmonyPatch(typeof(SlotHelper), "GenerateTags", new Type[] { typeof(Slot), typeof(HashSet<string>) })]
         class SlotHelper_GenerateTags_Patch
         {
@@ -38,13 +51,17 @@ namespace CustomInspectors
                 }
             }
         }
+
+        // This is where we add our code to replace the default spawned item with a custom one.
         [HarmonyPatch(typeof(SceneInspector), "OnAttach")]
         class SceneInspector_OnAttach_Patch
         {
             static bool Prefix(SceneInspector __instance)
             {
+                // If no favorite item has been selected spawn the default one
                 if (OurItem.Uri == null) return true;
-                var translator = new ReferenceTranslator();
+
+                // If the url is a record url, it needs to be converted to an asset url
                 var uri = OurItem.Uri;
                 if ( uri.Scheme == Engine.Current.Cloud.Platform.RecordScheme)
                 {
@@ -58,15 +75,19 @@ namespace CustomInspectors
                     uri = new Uri(cloudResult.Entity.AssetURI);
                 }
 
+                // Download the favorite item
                 var ttask = Engine.Current.AssetManager.GatherAssetFile(uri, 20, null);
                 ttask.AsTask().Wait();
                 string text = ttask.Result;
                 if (text == null || !File.Exists(text))
                 {
-                    return false;
+                    return true;
                 }
 
-                // this is where we load the json and parse it to merge guids with refids
+                // All the code under this is very implementation specific.
+                // In this case it's actually quite complex because of how inspectors are generated.
+
+                // this is where we load the item and parse it to merge guids with refids
                 DataTreeDictionary node = DataTreeConverter.Load(text, uri);
                 var rootNode = node.TryGetDictionary("Object");
                 if (rootNode.TryGetDictionary("Name").TryGetNode("Data").LoadString() == "Holder")
@@ -75,6 +96,7 @@ namespace CustomInspectors
                     node.Children["Object"] = rootNode;
                 }
                 var topLevel = rootNode.TryGetDictionary("Components").TryGetList("Data");
+                var translator = new ReferenceTranslator();
                 foreach (var dataNode in topLevel.Children)
                 {
                     var dictNode = (dataNode as DataTreeDictionary);
