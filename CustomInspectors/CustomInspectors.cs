@@ -16,11 +16,17 @@ namespace CustomInspectors
     {
         public override string Name => "CustomInspectors";
         public override string Author => "art0007i";
-        public override string Version => "2.0.0";
+        public override string Version => "2.1.0";
         public override string Link => "https://github.com/art0007i/CustomInspectors/";
+
+        [AutoRegisterConfigKey]
+        public static ModConfigurationKey<float> KEY_INSPECTOR_SCALE = new("inspector_scale", "Changes the default inspector scale to this value.\n0.0005 by default, because that's what the actual inspectors default scale is.", () => 0.0005f);
+
+        public static ModConfiguration config;
 
         public override void OnEngineInit()
         {
+            config = GetConfiguration();
             Harmony harmony = new Harmony("me.art0007i.CustomInspectors");
 
             // Register the special item.
@@ -128,7 +134,7 @@ namespace CustomInspectors
                 {
                     var pos = __instance.Slot.GlobalPosition;
                     var rot = __instance.Slot.GlobalRotation;
-                    var scl = __instance.Slot.GlobalScale;
+                    var scl = __instance.Slot.GlobalScale * config.GetValue(KEY_INSPECTOR_SCALE);
 
                     __instance.Slot.LoadObject(node, refTranslator: translator);
                     var old = __instance.Slot.GetComponent<SceneInspector>((insp) => insp != __instance);

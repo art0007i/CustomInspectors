@@ -7,6 +7,7 @@
     <AssemblyTitle>CustomInspectors</AssemblyTitle>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <TargetFramework>net472</TargetFramework>
+    <LangVersion>11</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <GamePath>$(MSBuildThisFileDirectory)Resonite</GamePath>
