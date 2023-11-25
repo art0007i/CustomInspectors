@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using FrooxEngine;
+using FrooxEngine.Store;
 using System.IO;
 using Elements.Core;
 using SpecialItemsLib;
