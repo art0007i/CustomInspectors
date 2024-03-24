@@ -2,7 +2,7 @@
 
 ## This mod requires [SpecialItemsLib](https://github.com/art0007i/SpecialItemsLib) to work
 
-A [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) that allows you to use custom inspector panels by saving them and clicking the purple heart.<br>
+A [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) that allows you to use custom inspector panels by saving them and favoriting them in your inventory.<br>
 Make sure to wait for it to finish syncing before favoriting or it won't work!<br>
 The `SceneInspector` component MUST be on the top level slot of the inspector, but most should be doing that anyway.
 
