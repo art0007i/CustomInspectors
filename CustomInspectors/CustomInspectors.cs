@@ -14,7 +14,7 @@ namespace CustomInspectors
     {
         public override string Name => "CustomInspectors";
         public override string Author => "art0007i";
-        public override string Version => "2.1.2";
+        public override string Version => "2.1.3";
         public override string Link => "https://github.com/art0007i/CustomInspectors/";
 
         [AutoRegisterConfigKey]
@@ -93,6 +93,9 @@ namespace CustomInspectors
 
                 // this is where we load the item and parse it to merge guids with refids
                 DataTreeDictionary node = DataTreeConverter.Load(text, uri);
+
+                var isNewTypes = node?.TryGetDictionary("FeatureFlags")?.TryGetNode("TypeManagement") != null;
+
                 var rootNode = node.TryGetDictionary("Object");
                 if (rootNode.TryGetDictionary("Name").TryGetNode("Data").LoadString() == "Holder")
                 {
@@ -104,8 +107,23 @@ namespace CustomInspectors
                 foreach (var dataNode in topLevel.Children)
                 {
                     var dictNode = (dataNode as DataTreeDictionary);
-                    var str = dictNode.TryGetNode("Type").LoadString();
-                    if (str == typeof(SceneInspector).ToString())
+                    var typeNode = dictNode.TryGetNode("Type");
+                    var check = false;
+                    if (isNewTypes)
+                    {
+                        var typeIdx = typeNode.LoadInt();
+                        var typeList = node.TryGetList("Types");
+                        if(typeList?.Count > typeIdx)
+                        {
+                            check = __instance.World.Types.DecodeType(typeList[typeIdx].LoadString()) == typeof(SceneInspector);
+                        }
+                    }
+                    else
+                    {
+                        check = typeNode.LoadString() == typeof(SceneInspector).ToString();
+                    }
+
+                    if (check)
                     {
                         var dataDict = dictNode.TryGetDictionary("Data");
 
