@@ -14,7 +14,7 @@ namespace CustomInspectors
     {
         public override string Name => "CustomInspectors";
         public override string Author => "art0007i";
-        public override string Version => "2.1.3";
+        public override string Version => "2.1.4";
         public override string Link => "https://github.com/art0007i/CustomInspectors/";
 
         [AutoRegisterConfigKey]
