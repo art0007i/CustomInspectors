@@ -152,7 +152,7 @@ namespace CustomInspectors
                     var rot = __instance.Slot.GlobalRotation;
                     var scl = __instance.Slot.GlobalScale * config.GetValue(KEY_INSPECTOR_SCALE);
 
-                    __instance.Slot.LoadObject(node, refTranslator: translator);
+                    __instance.Slot.LoadObject(node, null, refTranslator: translator);
                     var old = __instance.Slot.GetComponent<SceneInspector>((insp) => insp != __instance);
 
                     var rt = AccessTools.Field(typeof(SceneInspector), "_rootText");
