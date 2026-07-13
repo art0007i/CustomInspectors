@@ -1,0 +1,43 @@
+# This file is used by the Thunderstore CLI to build and publish your mod to Thunderstore. https://github.com/thunderstore-io/thunderstore-cli
+
+[config]
+schemaVersion = "0.0.1"
+
+[package]
+namespace = "art0007i"
+name = "CustomInspectors"
+description = "Allows you to use custom inspector panels by saving them and favoriting them in your inventory"
+websiteUrl = "https://github.com/art0007i/CustomInspectors"
+containsNsfwContent = false
+
+[package.dependencies] 
+ResoniteModding-BepisLoader = "1.5.1"
+art0007i-SpecialItemsLib = "2.0.3"
+
+[build]
+icon = "./icon.png"
+readme = "./README.md"
+outdir = "./build"
+
+[[build.copy]]
+source = "./Plugin/bin/Release/CustomInspectors.dll"
+target = "plugins/CustomInspectors/"
+
+[[build.copy]]
+source = "./Plugin/bin/Release/CustomInspectors.pdb"
+target = "plugins/CustomInspectors/"
+
+[[build.copy]]
+source = "./CHANGELOG.md"
+target = "/"
+
+[[build.copy]]
+source = "./LICENSE"
+target = "/"
+
+[publish]
+repository = "https://thunderstore.io"
+communities = ["resonite"]
+
+[publish.categories]
+resonite = [ "mods", "inspectors" ] # TODO: Change this to your mod's categories, see https://thunderstore.io/api/experimental/community/resonite/category/ for a list of available categories
